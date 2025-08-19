@@ -183,8 +183,8 @@ Matrix* dot(Matrix *m1, Matrix *m2) {
 			for (int j = 0; j < m2->cols; j++) {
 				double sum = 0;
 				for (int k = 0; k < m2->rows; k++) {
-su:m += m1->entries[i][k] * m2->entries[k][j];
-				}
+          sum += m1->entries[i][k] * m2->entries[k][j];
+			  }
 				m->entries[i][j] = sum;
 			}
 		}

@@ -59,7 +59,12 @@ void train_nn_batch_imgs(NeuralNetwork *net, Img **imgs, int batch_size){
     if (i % 50 == 0) printf("Image nº %d\n", i);
     Matrix *img_data = flatten_matrix(imgs[i]->img_data, 0); // converts into 1D matrix (matrix with 0 columns)
     Matrix *output = create_matrix(10, 1); // output matrix with 10 rows and 1 column
-    output->entries[imgs[i]->label][0] = 1; // Setting the result
+    int label = imgs[i]->label;
+    if (label < 0 || label > 9) {
+      fprintf(stderr, "Warning: skipping image %d with invalid label %d\n", i, label);
+    } else {
+      output->entries[label][0] = 1; // Setting the result (one-hot)
+    }
     train_nn(net, img_data, output);
     free_matrix(img_data);
     free_matrix(output);
@@ -109,7 +114,7 @@ void save_nn(NeuralNetwork *net, char *file_string){
   save_matrix(net->hidden_weights, "hidden");
   save_matrix(net->output_weights, "output");
   printf("Successfully written to '%s'\n", file_string);
-  chdir("-"); // Go back to the original directory  
+  chdir(".."); // Go back to the original directory  
 }
 
 NeuralNetwork *load_nn(char *file_string){
@@ -126,7 +131,7 @@ NeuralNetwork *load_nn(char *file_string){
   fclose(descriptor);
   net->hidden_weights = load_matrix("hidden");
   net->output_weights = load_matrix("output");
-  chdir("-"); // goes back to the original directory
+  chdir(".."); // goes back to the original directory
   return net;
 }
 
