@@ -56,7 +56,7 @@ void train_nn(NeuralNetwork *net, Matrix *input_data, Matrix *output_data){
 
 void train_nn_batch_imgs(NeuralNetwork *net, Img **imgs, int batch_size){
   for (int i = 0; i < batch_size; i++){
-    if (i % 50 == 0) printf("Image nº %d\n", i);
+    if (i % 1000 == 0) printf("Image nº %d\n", i);
     Matrix *img_data = flatten_matrix(imgs[i]->img_data, 0); // converts into 1D matrix (matrix with 0 columns)
     Matrix *output = create_matrix(10, 1); // output matrix with 10 rows and 1 column
     int label = imgs[i]->label;

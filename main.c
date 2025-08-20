@@ -12,7 +12,7 @@ int main(void){
 
   // TRAINING
   int train_imgs = 10000;
-  Img** train_data = csv_to_imgs("data/mnist_test.csv", train_imgs);
+  Img** train_data = csv_to_imgs("data/mnist_train.csv", train_imgs);
   NeuralNetwork* net = create_nn(784, 300, 10, 0.1);
   train_nn_batch_imgs(net, train_data, train_imgs);
   save_nn(net, "testing_net");

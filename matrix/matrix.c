@@ -205,8 +205,25 @@ Matrix* apply(double (*func)(double), Matrix* m) {
 	return mat;
 }
 
-Matrix* scale(double n, Matrix* m);
-Matrix* addScalar(double n, Matrix* m);
+Matrix* scale(double n, Matrix* m){
+  Matrix *res = create_matrix(m->rows, m->cols);
+  for (int i = 0; i < m->rows; i++){
+    for (int j = 0; j < m->cols; j++){
+      res->entries[i][j] = n * m->entries[i][j];
+    }
+  }
+  return res;
+}
+
+Matrix* addScalar(double n, Matrix* m){
+  Matrix *res = create_matrix(m->rows, m->cols);
+  for (int i = 0; i < m->rows; i++){
+    for (int j = 0; j < m->cols; j++){
+      res->entries[i][j] = m->entries[i][j] + n;
+    }
+  }
+  return res;
+}
 
 Matrix* transpose(Matrix* m){
   Matrix *m1 = create_matrix(m->cols, m->rows);
