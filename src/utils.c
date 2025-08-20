@@ -101,14 +101,3 @@ void free_imgs(Img **imgs, int n){
   free(imgs);
   imgs = NULL;
 }
-
-// Add shuffle function for training data
-void shuffle_imgs(Img **imgs, int n) {
-  for (int i = n - 1; i > 0; i--) {
-    int j = rand() % (i + 1);
-    // Swap pointers
-    Img *temp = imgs[i];
-    imgs[i] = imgs[j];
-    imgs[j] = temp;
-  }
-}

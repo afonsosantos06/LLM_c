@@ -4,6 +4,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <math.h>
 #include "../matrix/matrix.h"
 #include "activations.h"
 
@@ -108,9 +109,19 @@ void train_nn_minibatch_imgs(NeuralNetwork *net, Img **imgs, int n, int batch_si
     if (end > n) end = n;
     int m = end - start;
 
-    // Accumulators
+    if (start % 5000 == 0) printf("Processing batch starting at %d/%d\n", start, n);
+
+    // Accumulators - initialize to zero
     Matrix *acc_grad_out = create_matrix(net->output_weights->rows, net->output_weights->cols);
     Matrix *acc_grad_hid = create_matrix(net->hidden_weights->rows, net->hidden_weights->cols);
+    
+    // Initialize accumulators to zero
+    for (int r = 0; r < acc_grad_out->rows; r++)
+      for (int c = 0; c < acc_grad_out->cols; c++)
+        acc_grad_out->entries[r][c] = 0.0;
+    for (int r = 0; r < acc_grad_hid->rows; r++)
+      for (int c = 0; c < acc_grad_hid->cols; c++)
+        acc_grad_hid->entries[r][c] = 0.0;
 
     for (int i = start; i < end; i++) {
       Matrix *x = flatten_matrix(imgs[i]->img_data, 0);
@@ -157,12 +168,25 @@ void train_nn_minibatch_imgs(NeuralNetwork *net, Img **imgs, int n, int batch_si
 
     // Average gradients and update once
     double scale = net->learning_rate / (double)m;
-    for (int r = 0; r < net->output_weights->rows; r++)
-      for (int c = 0; c < net->output_weights->cols; c++)
+    
+    // Debug: check if gradients are non-zero
+    double max_grad_out = 0.0, max_grad_hid = 0.0;
+    for (int r = 0; r < acc_grad_out->rows; r++)
+      for (int c = 0; c < acc_grad_out->cols; c++) {
+        if (fabs(acc_grad_out->entries[r][c]) > max_grad_out) 
+          max_grad_out = fabs(acc_grad_out->entries[r][c]);
         net->output_weights->entries[r][c] -= scale * acc_grad_out->entries[r][c];
-    for (int r = 0; r < net->hidden_weights->rows; r++)
-      for (int c = 0; c < net->hidden_weights->cols; c++)
+      }
+    for (int r = 0; r < acc_grad_hid->rows; r++)
+      for (int c = 0; c < acc_grad_hid->cols; c++) {
+        if (fabs(acc_grad_hid->entries[r][c]) > max_grad_hid) 
+          max_grad_hid = fabs(acc_grad_hid->entries[r][c]);
         net->hidden_weights->entries[r][c] -= scale * acc_grad_hid->entries[r][c];
+      }
+    
+    if (start % 5000 == 0) {
+      printf("Batch gradients - max output: %.6f, max hidden: %.6f\n", max_grad_out, max_grad_hid);
+    }
 
     free_matrix(acc_grad_out);
     free_matrix(acc_grad_hid);

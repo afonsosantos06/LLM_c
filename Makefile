@@ -1,28 +1,26 @@
 CC = gcc
 CFLAGS = -Wall -Wno-implicit-function-declaration -O3 -march=native -ffast-math -DNDEBUG
 
-# Source olders
 SRC_DIR = src
 MATRIX_DIR = matrix
 
-# List of source files
-SRCS = main.c $(wildcard $(SRC_DIR)/*.c) $(wildcard $(MATRIX_DIR)/*.c)
-
-# Object files (replace .c with .o)
+SRCS = $(wildcard $(SRC_DIR)/*.c) $(wildcard $(MATRIX_DIR)/*.c)
 OBJS = $(SRCS:.c=.o)
 
-all: main
+all: train predict
 
-# Link step
-main: $(OBJS)
-	@echo "Linking $(TARGET)"
-	$(CC) $(CFLAGS) -o $@ $(OBJS)
+train: train.o $(OBJS)
+	@echo "Linking train"
+	$(CC) $(CFLAGS) -o $@ $^
 
-# Generic rule to compile .c -> .o
+predict: predict.o $(OBJS)
+	@echo "Linking predict"
+	$(CC) $(CFLAGS) -o $@ $^
+
 %.o: %.c
 	@echo "Compiling $<"
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
 	@echo "Cleaning up..."
-	rm -f $(OBJS) $(TARGET)
+	rm -f $(OBJS) train.o predict.o train predict
