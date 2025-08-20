@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -Wno-implicit-function-declaration -g
+CFLAGS = -Wall -Wno-implicit-function-declaration -O3 -march=native -ffast-math -DNDEBUG
 
 # Source olders
 SRC_DIR = src

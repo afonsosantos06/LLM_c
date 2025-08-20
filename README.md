@@ -1,5 +1,6 @@
 # Large Language Model in C (MNIST)
 With this project I intend to explore C programming, linear algebra, calculus and machine learning by implementing a small neural network from scratch and training it on MNIST (more about MNIST: https://en.wikipedia.org/wiki/MNIST_database).
+I took as an inspiration this book https://neuralnetworksanddeeplearning.com
 
 ## Mathematical foundations (gradient descent and backpropagation)
 

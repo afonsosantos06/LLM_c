@@ -11,5 +11,6 @@ Img **csv_to_imgs(char *file_string, int number_of_imgs); // load image and conv
 void print_img(Img *img); 
 void free_img(Img *img);
 void free_imgs(Img **imgs, int n);
+void shuffle_imgs(Img **imgs, int n);
 
 #endif

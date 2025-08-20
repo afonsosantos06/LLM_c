@@ -109,7 +109,7 @@ int argmax_matrix(Matrix *m){
 
 Matrix *flatten_matrix(Matrix *m, int axis){
   Matrix *m1;
-  if (axis == 0)
+  if (axis == 0) // 
     m1 = create_matrix(m->rows * m->cols, 1);
   else if (axis == 1) 
     m1 = create_matrix(1, m->rows * m->cols);

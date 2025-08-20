@@ -31,48 +31,146 @@ void train_nn(NeuralNetwork *net, Matrix *input_data, Matrix *output_data){
   Matrix *final_inputs = dot(net->output_weights, hidden_outputs);
   Matrix *final_outputs = apply(sigmoid, final_inputs);
 
-  // Find errors
-  Matrix *output_errors = subtract(output_data, final_outputs); // difference betwen expected and predicted outputs
-  Matrix *transposed_mat = transpose(net->output_weights);
-  Matrix *hidden_errors = dot(transposed_mat, output_errors); // Error at the 
-  free_matrix(transposed_mat);
+  Matrix *a_minus_y = subtract(final_outputs, output_data); // a_o - y
+  Matrix *sigp_o = sigmoidPrime(final_outputs);             // elementwise σ'(a_o)
+  Matrix *delta_o = multiply(a_minus_y, sigp_o);            // (a_o - y) ⊙ σ'(a_o)
 
-  /*Backpropagation
-  output_weights = add( 
-    output_weights,
-    scale(
-      net->learning_rate,
-      dot(
-        multiply(
-          output_errors, 
-          sigmoidPrime(final_outputs)
-        ),
-      transpose(hidden_outputs)
-      ) 
-    )
-  )
-  */
+  // Gradients for output weights (SGD step)
+  Matrix *hidden_T = transpose(hidden_outputs);
+  Matrix *grad_out = dot(delta_o, hidden_T);                // δ_o · a_h^T
+
+  // Hidden layer delta using W_o before update
+  Matrix *W_o_T = transpose(net->output_weights);
+  Matrix *backprop_err = dot(W_o_T, delta_o);
+  Matrix *sigp_h = sigmoidPrime(hidden_outputs);
+  Matrix *delta_h = multiply(backprop_err, sigp_h);         // (W_o^T δ_o) ⊙ σ'(a_h)
+
+  // Gradients for hidden weights
+  Matrix *input_T = transpose(input_data);
+  Matrix *grad_hid = dot(delta_h, input_T);                 // δ_h · x^T
+
+  // Apply SGD updates: W <- W - η * grad (IN-PLACE for efficiency)
+  double lr = net->learning_rate;
+  
+  // Update output weights in-place
+  for (int i = 0; i < net->output_weights->rows; i++) {
+    for (int j = 0; j < net->output_weights->cols; j++) {
+      net->output_weights->entries[i][j] -= lr * grad_out->entries[i][j];
+    }
+  }
+  
+  // Update hidden weights in-place
+  for (int i = 0; i < net->hidden_weights->rows; i++) {
+    for (int j = 0; j < net->hidden_weights->cols; j++) {
+      net->hidden_weights->entries[i][j] -= lr * grad_hid->entries[i][j];
+    }
+  }
+
+  // Free all temporaries
+  free_matrix(a_minus_y);
+  free_matrix(sigp_o);
+  free_matrix(delta_o);
+  free_matrix(hidden_T);
+  free_matrix(grad_out);
+  free_matrix(W_o_T);
+  free_matrix(backprop_err);
+  free_matrix(sigp_h);
+  free_matrix(delta_h);
+  free_matrix(input_T);
+  free_matrix(grad_hid);
+  
+  // Free forward pass matrices
+  free_matrix(hidden_inputs);
+  free_matrix(hidden_outputs);
+  free_matrix(final_inputs);
+  free_matrix(final_outputs);
 }
 
 void train_nn_batch_imgs(NeuralNetwork *net, Img **imgs, int batch_size){
   for (int i = 0; i < batch_size; i++){
-    if (i % 1000 == 0) printf("Image nº %d\n", i);
+    if (i % 1000 == 0) printf("Training image %d/%d\n", i, batch_size);
     Matrix *img_data = flatten_matrix(imgs[i]->img_data, 0); // converts into 1D matrix (matrix with 0 columns)
     Matrix *output = create_matrix(10, 1); // output matrix with 10 rows and 1 column
     int label = imgs[i]->label;
-    if (label < 0 || label > 9) {
-      fprintf(stderr, "Warning: skipping image %d with invalid label %d\n", i, label);
-    } else {
-      output->entries[label][0] = 1; // Setting the result (one-hot)
-    }
+    if (label < 0 || label > 9) fprintf(stderr, "Warning: skipping image %d with invalid label %d\n", i, label);
+    else output->entries[label][0] = 1; // Setting the result (one-hot)
+
     train_nn(net, img_data, output);
     free_matrix(img_data);
     free_matrix(output);
   }
 }
 
+// Mini-batch training: accumulate gradients over m samples then update once
+void train_nn_minibatch_imgs(NeuralNetwork *net, Img **imgs, int n, int batch_size){
+  for (int start = 0; start < n; start += batch_size) {
+    int end = start + batch_size;
+    if (end > n) end = n;
+    int m = end - start;
+
+    // Accumulators
+    Matrix *acc_grad_out = create_matrix(net->output_weights->rows, net->output_weights->cols);
+    Matrix *acc_grad_hid = create_matrix(net->hidden_weights->rows, net->hidden_weights->cols);
+
+    for (int i = start; i < end; i++) {
+      Matrix *x = flatten_matrix(imgs[i]->img_data, 0);
+      Matrix *y = create_matrix(10, 1);
+      int label = imgs[i]->label;
+      if (label >= 0 && label <= 9) y->entries[label][0] = 1;
+
+      // Forward
+      Matrix *z_h = dot(net->hidden_weights, x);
+      Matrix *a_h = apply(sigmoid, z_h);
+      Matrix *z_o = dot(net->output_weights, a_h);
+      Matrix *a_o = apply(sigmoid, z_o);
+
+      // Deltas
+      Matrix *a_minus_y = subtract(a_o, y);
+      Matrix *sigp_o = sigmoidPrime(a_o);
+      Matrix *delta_o = multiply(a_minus_y, sigp_o);
+      Matrix *a_h_T = transpose(a_h);
+      Matrix *grad_out = dot(delta_o, a_h_T);
+
+      Matrix *W_o_T = transpose(net->output_weights);
+      Matrix *W_o_T_do = dot(W_o_T, delta_o);
+      Matrix *sigp_h = sigmoidPrime(a_h);
+      Matrix *delta_h = multiply(W_o_T_do, sigp_h);
+      Matrix *x_T = transpose(x);
+      Matrix *grad_hid = dot(delta_h, x_T);
+
+      // Accumulate
+      for (int r = 0; r < acc_grad_out->rows; r++)
+        for (int c = 0; c < acc_grad_out->cols; c++)
+          acc_grad_out->entries[r][c] += grad_out->entries[r][c];
+      for (int r = 0; r < acc_grad_hid->rows; r++)
+        for (int c = 0; c < acc_grad_hid->cols; c++)
+          acc_grad_hid->entries[r][c] += grad_hid->entries[r][c];
+
+      // Free temps
+      free_matrix(x); free_matrix(y);
+      free_matrix(z_h); free_matrix(a_h); free_matrix(z_o); free_matrix(a_o);
+      free_matrix(a_minus_y); free_matrix(sigp_o); free_matrix(delta_o);
+      free_matrix(a_h_T); free_matrix(grad_out);
+      free_matrix(W_o_T); free_matrix(W_o_T_do); free_matrix(sigp_h);
+      free_matrix(delta_h); free_matrix(x_T); free_matrix(grad_hid);
+    }
+
+    // Average gradients and update once
+    double scale = net->learning_rate / (double)m;
+    for (int r = 0; r < net->output_weights->rows; r++)
+      for (int c = 0; c < net->output_weights->cols; c++)
+        net->output_weights->entries[r][c] -= scale * acc_grad_out->entries[r][c];
+    for (int r = 0; r < net->hidden_weights->rows; r++)
+      for (int c = 0; c < net->hidden_weights->cols; c++)
+        net->hidden_weights->entries[r][c] -= scale * acc_grad_hid->entries[r][c];
+
+    free_matrix(acc_grad_out);
+    free_matrix(acc_grad_hid);
+  }
+}
+
 Matrix *nn_img_predict(NeuralNetwork *net, Img *img){
-  Matrix *img_data = flatten_matrix(img->img_data, 0); 
+  Matrix *img_data = flatten_matrix(img->img_data, 0); // 
   Matrix *res = nn_predict(net, img_data);
   free_matrix(img_data);
   return res;
