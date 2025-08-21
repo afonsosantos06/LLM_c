@@ -166,9 +166,9 @@ void train_nn_minibatch_imgs(NeuralNetwork *net, Img **imgs, int n, int batch_si
       free_matrix(delta_h); free_matrix(x_T); free_matrix(grad_hid);
     }
 
-    // Average gradients and update once
+    // Average gradients and update once (scaled by batch size)
     double scale = net->learning_rate / (double)m;
-    
+
     // Debug: check if gradients are non-zero
     double max_grad_out = 0.0, max_grad_hid = 0.0;
     for (int r = 0; r < acc_grad_out->rows; r++)

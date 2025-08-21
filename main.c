@@ -13,8 +13,6 @@ int main(void){
 	for (int i = 0; i < epoch; i++){
 		printf("Epoch %d/%d\n", i+1, epoch);
 		//TRAINING
-		Img** imgs_train = csv_to_imgs("./data/mnist_test.csv", number_imgs_train);
-		NeuralNetwork* net = create_nn(784, 300, 10, 0.1);
 		train_nn_batch_imgs(net, imgs_train, number_imgs_train);
 
 		// PREDICTING
