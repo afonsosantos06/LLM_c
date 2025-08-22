@@ -3,50 +3,50 @@ With this project I intend to explore C programming, linear algebra, calculus an
 
 ## Mathematical foundations (gradient descent and backpropagation)
 
-We use a 3-layer feedforward network: input 784 (28x28 pixels) → hidden H → output 10, with sigmoid activations. Matrices are column-oriented (vectors are \(n\times1\)).
+We use a 3-layer feedforward network: input 784 (28×28 pixels) → hidden H → output 10, with sigmoid activations. Matrices are column-oriented (vectors are n×1).
 
 - Shapes
-  - Hidden weights \(W_h \in \mathbb{R}^{H\times 784}\), output weights \(W_o \in \mathbb{R}^{10\times H}\).
-  - Input \(x \in \mathbb{R}^{784\times1}\), hidden activations \(a^h \in \mathbb{R}^{H\times1}\), output activations \(a^o \in \mathbb{R}^{10\times1}\).
+  - Hidden weights W<sub>h</sub> ∈ ℝ<sup>H×784</sup>, output weights W<sub>o</sub> ∈ ℝ<sup>10×H</sup>.
+  - Input x ∈ ℝ<sup>784×1</sup>, hidden activations a<sup>h</sup> ∈ ℝ<sup>H×1</sup>, output activations a<sup>o</sup> ∈ ℝ<sup>10×1</sup>.
 
 - Forward propagation
-  - Weighted inputs: \(z^h = W_h x + b_h\), \(z^o = W_o a^h + b_o\).
-  - Activations (sigmoid): \(a^h = \sigma(z^h)\), \(a^o = \sigma(z^o)\), with \(\sigma(t)=\tfrac{1}{1+e^{-t}}\).
-  - Sigmoid derivative: \(\sigma'(z) = \sigma(z)\,\odot\,(1-\sigma(z))\).
+  - Weighted inputs: z<sup>h</sup> = W<sub>h</sub> x + b<sub>h</sub>, z<sup>o</sup> = W<sub>o</sub> a<sup>h</sup> + b<sub>o</sub>.
+  - Activations (sigmoid): a<sup>h</sup> = σ(z<sup>h</sup>), a<sup>o</sup> = σ(z<sup>o</sup>), with σ(t) = 1/(1+e<sup>-t</sup>).
+  - Sigmoid derivative: σ'(z) = σ(z) ⊙ (1-σ(z)).
 
-- Cost function (quadratic/MSE, single example with one-hot \(y\))
-  \[ C = \tfrac{1}{2}\,\lVert a^o - y \rVert_2^2. \]
-  Then \(\nabla_{a^o} C = a^o - y\).
+- Cost function (quadratic/MSE, single example with one-hot y)
+  C = ½ ||a<sup>o</sup> - y||<sub>2</sub><sup>2</sup>.
+  Then ∇<sub>a<sup>o</sup></sub> C = a<sup>o</sup> - y.
 
-- Hadamard product (elementwise) \(u\odot v\): same shape vectors/matrices multiplied componentwise. It appears whenever we apply scalar derivatives elementwise (e.g., \(\sigma'(z)\)).
+- Hadamard product (elementwise) u ⊙ v: same shape vectors/matrices multiplied componentwise. It appears whenever we apply scalar derivatives elementwise (e.g., σ'(z)).
 
 ### Backpropagation (per example)
 
-Define layer errors (sensitivities) \(\delta^\ell = \partial C / \partial z^\ell\).
+Define layer errors (sensitivities) δ<sup>ℓ</sup> = ∂C/∂z<sup>ℓ</sup>.
 
 - Output error (BP1):
-  \[ \delta^o = (a^o - y) \odot \sigma'(z^o). \]
+  δ<sup>o</sup> = (a<sup>o</sup> - y) ⊙ σ'(z<sup>o</sup>).
 - Hidden error (BP2):
-  \[ \delta^h = (W_o^\top\,\delta^o) \odot \sigma'(z^h). \]
+  δ<sup>h</sup> = (W<sub>o</sub><sup>⊤</sup> δ<sup>o</sup>) ⊙ σ'(z<sup>h</sup>).
 - Gradients (BP3–BP4):
-  \[ \tfrac{\partial C}{\partial W_o} = \delta^o (a^h)^{\top},\quad \tfrac{\partial C}{\partial b_o} = \delta^o, \]
-  \[ \tfrac{\partial C}{\partial W_h} = \delta^h x^{\top},\quad \tfrac{\partial C}{\partial b_h} = \delta^h. \]
-- Gradient descent update (learning rate \(\eta\)):
-  \[ W \leftarrow W - \eta\,\partial C/\partial W,\quad b \leftarrow b - \eta\,\partial C/\partial b. \]
+  ∂C/∂W<sub>o</sub> = δ<sup>o</sup> (a<sup>h</sup>)<sup>⊤</sup>, ∂C/∂b<sub>o</sub> = δ<sup>o</sup>,
+  ∂C/∂W<sub>h</sub> = δ<sup>h</sup> x<sup>⊤</sup>, ∂C/∂b<sub>h</sub> = δ<sup>h</sup>.
+- Gradient descent update (learning rate η):
+  W ← W - η ∂C/∂W, b ← b - η ∂C/∂b.
 
-These are Nielsen’s equations BP1–BP4 (Neural Networks and Deep Learning, Ch. 2) in vector/matrix form.
+These are Nielsen's equations BP1–BP4 (Neural Networks and Deep Learning, Ch. 2) in vector/matrix form.
 
 ### Mini-batch SGD (matrix view)
 
-For a mini-batch of size \(m\), stack columns: \(X\in\mathbb{R}^{784\times m}\), \(Y\in\mathbb{R}^{10\times m}\), and use \(\mathbf{1}\in\mathbb{R}^{m\times1}\).
+For a mini-batch of size m, stack columns: X ∈ ℝ<sup>784×m</sup>, Y ∈ ℝ<sup>10×m</sup>, and use 1 ∈ ℝ<sup>m×1</sup>.
 
-- Forward: \(Z^h=W_hX+b_h\mathbf{1}^\top\), \(A^h=\sigma(Z^h)\); \(Z^o=W_oA^h+b_o\mathbf{1}^\top\), \(A^o=\sigma(Z^o)\).
-- Backward: \(\Delta^o=(A^o-Y)\odot\sigma'(Z^o)\), \(\Delta^h=(W_o^\top\Delta^o)\odot\sigma'(Z^h)\).
-- Gradients (averaged): \(\partial C/\partial W_o=\tfrac{1}{m}\Delta^o(A^h)^\top\), \(\partial C/\partial b_o=\tfrac{1}{m}\,\Delta^o\mathbf{1}\). Similarly for \(W_h,b_h\) with \(\Delta^h\) and \(X\).
+- Forward: Z<sup>h</sup> = W<sub>h</sub>X + b<sub>h</sub>1<sup>⊤</sup>, A<sup>h</sup> = σ(Z<sup>h</sup>); Z<sup>o</sup> = W<sub>o</sub>A<sup>h</sup> + b<sub>o</sub>1<sup>⊤</sup>, A<sup>o</sup> = σ(Z<sup>o</sup>).
+- Backward: Δ<sup>o</sup> = (A<sup>o</sup> - Y) ⊙ σ'(Z<sup>o</sup>), Δ<sup>h</sup> = (W<sub>o</sub><sup>⊤</sup>Δ<sup>o</sup>) ⊙ σ'(Z<sup>h</sup>).
+- Gradients (averaged): ∂C/∂W<sub>o</sub> = (1/m)Δ<sup>o</sup>(A<sup>h</sup>)<sup>⊤</sup>, ∂C/∂b<sub>o</sub> = (1/m)Δ<sup>o</sup>1. Similarly for W<sub>h</sub>,b<sub>h</sub> with Δ<sup>h</sup> and X.
 
 ### Optional: softmax + cross-entropy
 
-Using softmax \(p=\mathrm{softmax}(z^o)\) with cross-entropy loss yields \(\delta^o = p - y\) (no \(\sigma'(z^o)\) term), with the same matrix shapes for updates.
+Using softmax p = softmax(z<sup>o</sup>) with cross-entropy loss yields δ<sup>o</sup> = p - y (no σ'(z<sup>o</sup>) term), with the same matrix shapes for updates.
 
 ## Mapping to this codebase
 
